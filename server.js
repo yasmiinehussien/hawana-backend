@@ -69,8 +69,12 @@ app.use(ordersRoutes); // Routes like: /orders
 const productSizeRoutes = require('./routes/product_size');
 app.use(productSizeRoutes); // Routes like: /products/:id/sizes
 
+// const categoryRoutes = require('./routes/category');
+// app.use(categoryRoutes); // Routes like: /categories
+
 const categoryRoutes = require('./routes/category');
-app.use(categoryRoutes); // Routes like: /categories
+app.use('/api/categories', categoryRoutes);
+
 
 const productRoutes = require('./routes/product');
 app.use(productRoutes); // Routes like: /products
