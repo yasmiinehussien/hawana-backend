@@ -12,8 +12,20 @@ const PORT = process.env.PORT || 3000; // ✅ Use env port, fallback to 3000
 // =======================
 // Middleware
 // =======================
-app.use(cors());
-app.use(express.json());
+// app.use(cors());
+// app.use(express.json());
+
+
+const cors = require('cors');
+
+app.use(cors({
+  origin: ['https://hawanashop.com', 'https://www.hawanashop.com'],
+  credentials: true
+}));
+
+app.use(express.json()); // ✅ Needed to handle JSON payloads
+
+
 
 // =======================
 // Serve static files
