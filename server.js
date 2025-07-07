@@ -82,7 +82,8 @@ app.use('/api', categoryRoutes);
 
 
 const productRoutes = require('./routes/product');
-app.use(productRoutes); // Routes like: /products
+// app.use(productRoutes); // Routes like: /products
+app.use('/api', productRoutes);
 
 
 // admain apies 
