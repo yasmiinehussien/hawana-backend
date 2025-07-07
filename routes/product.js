@@ -1,18 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db_conn');
-const multer = require('multer');
-const path = require('path');
+const upload = require('../utils/cloudinary'); // ✅ Use Cloudinary uploader
 
-// Image upload setup
-const storage = multer.diskStorage({
-  destination: 'images/',
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + file.originalname;
-    cb(null, uniqueName);
-  },
-});
-const upload = multer({ storage });
 
 // Define PORT manually (or import from config)
 const BASE_URL = process.env.BASE_URL || `http://localhost:3000`;
@@ -33,12 +23,11 @@ router.post('/products', upload.single('image'), async (req, res) => {
   const { name, category_id, calories, description, image_url, is_best_seller, is_new } = req.body;
   const parsedCategoryId = parseInt(category_id);
 
-  let finalImageUrl = image_url;
+let finalImageUrl = req.body.image_url;
 
-  // ✅ If image is uploaded via file
-  if (req.file) {
-    finalImageUrl = `${req.protocol}://${req.get('host')}/images/${req.file.filename}`;
-  }
+if (req.file?.path) {
+  finalImageUrl = req.file.path; // ✅ Cloudinary returns the full URL
+}
 
   if (!finalImageUrl) {
     return res.status(400).json({ error: 'Image is required (file or image_url)' });
