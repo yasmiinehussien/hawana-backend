@@ -2,22 +2,14 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db_conn');
 
-const multer = require('multer');
-const path = require('path');
+const { storage } = require('../utils/cloudinary'); // ✅ You will create this file next
+
 
 
 // const bcrypt = require('bcrypt');
 
 
-// Storage for admin images
-const adminStorage = multer.diskStorage({
-  destination: 'images/',
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + file.originalname;
-    cb(null, uniqueName);
-  },
-});
-const upload = multer({ storage: adminStorage });
+
 
 //✅ Add a new admin
 router.post('/', async (req, res) => {
@@ -119,9 +111,8 @@ router.post('/login', async (req, res) => {
 router.post('/', upload.single('image'), async (req, res) => {
   const { name, email, password } = req.body;
 
-  const image = req.file
-    ? `${req.protocol}://${req.get('host')}/images/${req.file.filename}` // ✅ dynamic & deployment-friendly
-    : req.body.image || null;
+  const image = req.file?.path || null; // ✅ Use Cloudinary image URL
+
 
   try {
     const result = await pool.query(
@@ -141,9 +132,8 @@ router.put('/:id', upload.single('image'), async (req, res) => {
   const { id } = req.params;
   const { name, email, password } = req.body;
 
-  const image = req.file
-    ? `${req.protocol}://${req.get('host')}/images/${req.file.filename}` // ✅ dynamic for deployment
-    : req.body.image || null;
+const image = req.file?.path || req.body.image || null;
+
 
   try {
     // Build dynamic query
