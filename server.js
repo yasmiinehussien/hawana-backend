@@ -23,27 +23,27 @@ app.use(express.json());
 // =======================
 // Serve static files
 // =======================
-app.use('/images', express.static('images')); // 🔗 http://localhost:PORT/images/xxx.jpg
+// app.use('/images', express.static('images')); // 🔗 http://localhost:PORT/images/xxx.jpg
 
-// =======================
-// Image Upload Setup
-// =======================
-const storage = multer.diskStorage({
-  destination: 'images/',
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + file.originalname;
-    cb(null, uniqueName);
-  },
-});
-const upload = multer({ storage });
+// // =======================
+// // Image Upload Setup
+// // =======================
+// const storage = multer.diskStorage({
+//   destination: 'images/',
+//   filename: (req, file, cb) => {
+//     const uniqueName = Date.now() + '-' + file.originalname;
+//     cb(null, uniqueName);
+//   },
+// });
+// const upload = multer({ storage });
 
-// Upload route
-app.post('/upload-image', upload.single('image'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+// // Upload route
+// app.post('/upload-image', upload.single('image'), (req, res) => {
+//   if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
 
-  const imageUrl = `${req.protocol}://${req.get('host')}/images/${req.file.filename}`; // ✅ dynamic URL
-  res.json({ image_url: imageUrl });
-});
+//   const imageUrl = `${req.protocol}://${req.get('host')}/images/${req.file.filename}`; // ✅ dynamic URL
+//   res.json({ image_url: imageUrl });
+// });
 const userRoutes = require('./routes/users');
 app.use(userRoutes); // Routes like: /users, /users/:id
 
