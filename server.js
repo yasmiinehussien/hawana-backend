@@ -1,29 +1,22 @@
 require('dotenv').config(); // 🔹 Load environment variables
 
 const express = require('express');
-const cors = require('cors');
+const cors = require('cors'); // ✅ Only declare once
 const multer = require('multer');
 const path = require('path');
 const { Pool } = require('pg');
 
 const app = express();
-const PORT = process.env.PORT || 3000; // ✅ Use env port, fallback to 3000
+const PORT = process.env.PORT || 3000;
 
-// =======================
-// Middleware
-// =======================
-// app.use(cors());
-// app.use(express.json());
-
-
-const cors = require('cors');
-
+// ✅ Middleware
 app.use(cors({
   origin: ['https://hawanashop.com', 'https://www.hawanashop.com'],
   credentials: true
 }));
 
-app.use(express.json()); // ✅ Needed to handle JSON payloads
+app.use(express.json());
+
 
 
 
