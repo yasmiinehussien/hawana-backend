@@ -45,16 +45,16 @@ app.use(express.json());
 //   res.json({ image_url: imageUrl });
 // });
 const userRoutes = require('./routes/users');
-app.use(userRoutes); // Routes like: /users, /users/:id
+app.use('/api', userRoutes);
 
 const shopRoutes = require('./routes/shop_info');
-app.use('/shop-info', shopRoutes); // ✅ Set the route prefix
+app.use('/api/shop-info', shopRoutes);
 
 const reviewRoutes = require('./routes/reviews');
-app.use(reviewRoutes); // Routes like: /reviews
+app.use('/api', reviewRoutes);
 
 const contactRoutes = require('./routes/contact');
-app.use(contactRoutes); // Routes like: /contact_messages
+app.use('/api', contactRoutes);
 
 app.use('/promocode', require('./routes/promocode'));
 // ✅ CORRECT:
@@ -63,16 +63,16 @@ app.use('/', require('./routes/promocode'));
 
 
 const checkoutRoutes = require('./routes/checkout');
-app.use(checkoutRoutes); // Routes like: /checkout
+app.use('/api', checkoutRoutes);
 
 const cartRoutes = require('./routes/cart');
-app.use(cartRoutes); // Routes like: /cart, /cart_items
+app.use('/api', cartRoutes);
 
 const ordersRoutes = require('./routes/order');
-app.use(ordersRoutes); // Routes like: /orders
+app.use('/api', ordersRoutes);
 
 const productSizeRoutes = require('./routes/product_size');
-app.use(productSizeRoutes); // Routes like: /products/:id/sizes
+app.use('/api', productSizeRoutes);
 
 // const categoryRoutes = require('./routes/category');
 // app.use(categoryRoutes); // Routes like: /categories
