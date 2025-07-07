@@ -1,19 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 
 const pool = require('../db_conn'); // adjust path as needed
 PORT = 3000
 
-// ✅ Setup for image upload
-const storage = multer.diskStorage({
-  destination: 'images/',
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + file.originalname;
-    cb(null, uniqueName);
-  },
-});
-const upload = multer({ storage });
+const upload = require('../utils/cloudinary'); // ✅ Cloudinary uploader
+
 
 // ✅ GET all categories
 router.get('/categories', async (req, res) => {

@@ -2,20 +2,10 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db_conn');
 
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const baseUrl = process.env.BASE_URL || `http://localhost:3000`;
 
-// ✅ Place multer config here:
-const storage = multer.diskStorage({
-  destination: 'images/',
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + file.originalname;
-    cb(null, uniqueName);
-  },
-});
-const upload = multer({ storage });
+const upload = require('../utils/cloudinary'); // ✅ Cloudinary uploader
+
 
 
 // ✅ Archive product (soft delete)
@@ -173,7 +163,7 @@ router.put('/products/:id', upload.single('image'), async (req, res) => {
   // ✅ If a new image is uploaded
   
   if (req.file) {
-    finalImageUrl = `${baseUrl}/images/${req.file.filename}`;
+finalImageUrl = req.file.path; // ✅ Cloudinary gives full HTTPS URL here
   }
 
   try {
