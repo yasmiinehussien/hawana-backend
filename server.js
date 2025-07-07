@@ -58,7 +58,7 @@ app.use('/api', contactRoutes);
 
 app.use('/promocode', require('./routes/promocode'));
 // ✅ CORRECT:
-// app.use('/', require('./routes/promocode'));
+app.use('/', require('./routes/promocode'));
 
 
 
