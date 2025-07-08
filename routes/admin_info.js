@@ -1,23 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db_conn');
+const upload = require('../utils/cloudinary'); // your existing 
 
-const multer = require('multer');
-const path = require('path');
-
-
-// const bcrypt = require('bcrypt');
-
-
-// Storage for admin images
-const adminStorage = multer.diskStorage({
-  destination: 'images/',
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + file.originalname;
-    cb(null, uniqueName);
-  },
-});
-const upload = multer({ storage: adminStorage });
 
 //✅ Add a new admin
 router.post('/', async (req, res) => {
@@ -34,16 +19,17 @@ router.post('/', async (req, res) => {
   }
 });
 
-// ✅ Get all admins
+// ✅ Get all admins (including image)
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, name, email, created_at FROM admins');
+    const result = await pool.query('SELECT id, name, email, image, created_at FROM admins');
     res.json(result.rows);
   } catch (err) {
     console.error('❌ Error fetching admins:', err.message);
     res.status(500).json({ error: 'Failed to fetch admin list' });
   }
 });
+
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -112,70 +98,47 @@ router.post('/login', async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('Login error:', err.message);
+console.error('Login error:', err); // ✅ log the full error object
     res.status(500).json({ error: 'Server error during login' });
   }
 });
-router.post('/', upload.single('image'), async (req, res) => {
-  const { name, email, password } = req.body;
-
-  const image = req.file
-    ? `${req.protocol}://${req.get('host')}/images/${req.file.filename}` // ✅ dynamic & deployment-friendly
-    : req.body.image || null;
-
-  try {
-    const result = await pool.query(
-      'INSERT INTO admins (name, email, password, image) VALUES ($1, $2, $3, $4) RETURNING id, name, email, image',
-      [name, email, password, image]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error('❌ Error adding admin:', err.message);
-    res.status(500).json({ error: 'Failed to create admin' });
-  }
-});
-
-// ✅ Update admin (with image)
-// ✅ Update admin (with optional image and password)
 router.put('/:id', upload.single('image'), async (req, res) => {
   const { id } = req.params;
   const { name, email, password } = req.body;
 
-  const image = req.file
-    ? `${req.protocol}://${req.get('host')}/images/${req.file.filename}` // ✅ dynamic for deployment
-    : req.body.image || null;
-
   try {
-    // Build dynamic query
+    // Use the correct image URL from Cloudinary upload middleware
+    const imageUrl = req.file ? (req.file.path || req.file.secure_url) : req.body.image || null;
+
     const updates = [];
     const values = [];
-    let index = 1;
+    let idx = 1;
 
     if (name) {
-      updates.push(`name = $${index++}`);
+      updates.push(`name = $${idx++}`);
       values.push(name);
     }
     if (email) {
-      updates.push(`email = $${index++}`);
+      updates.push(`email = $${idx++}`);
       values.push(email);
     }
     if (password) {
-      updates.push(`password = $${index++}`);
+      updates.push(`password = $${idx++}`);
       values.push(password);
     }
-    if (image) {
-      updates.push(`image = $${index++}`);
-      values.push(image);
+    if (imageUrl) {
+      updates.push(`image = $${idx++}`);
+      values.push(imageUrl);
     }
 
     if (updates.length === 0) {
       return res.status(400).json({ error: 'No data to update' });
     }
 
-    values.push(id); // Add ID for WHERE clause
+    values.push(id);
 
     const result = await pool.query(
-      `UPDATE admins SET ${updates.join(', ')} WHERE id = $${index} RETURNING id, name, email, image`,
+      `UPDATE admins SET ${updates.join(', ')} WHERE id = $${idx} RETURNING id, name, email, image`,
       values
     );
 
@@ -185,9 +148,11 @@ router.put('/:id', upload.single('image'), async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('❌ Error updating admin:', err.message);
+    console.error('❌ Error updating admin:', err);
     res.status(500).json({ error: 'Failed to update admin' });
   }
 });
 
+
 module.exports = router;
+

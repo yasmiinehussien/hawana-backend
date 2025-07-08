@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require('../db_conn');
 
 // Admin adds promo
-router.post('/', async (req, res) => {
+router.post('/promocode', async (req, res) => {
   const { code, discount_amount, end_date } = req.body;
 
   try {

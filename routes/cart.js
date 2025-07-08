@@ -96,8 +96,11 @@ router.get('/cart/user/:guest_user_id', async (req, res) => {
 
   try {
     const result = await pool.query(
-      'SELECT * FROM cart WHERE guest_user_id = $1 AND status = $2',
-      [guest_user_id, 'active']
+      `SELECT * FROM cart 
+       WHERE guest_user_id = $1 AND status = 'active' 
+       ORDER BY created_at DESC 
+       LIMIT 1`,
+      [guest_user_id]
     );
 
     if (result.rows.length > 0) {
@@ -106,9 +109,11 @@ router.get('/cart/user/:guest_user_id', async (req, res) => {
       res.status(404).json({ message: 'No active cart' });
     }
   } catch (err) {
-    res.status(500).json({ error: 'Error retrieving cart' });
+    console.error('❌ Error retrieving cart:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 // ✅ Delete Cart Item (and cancel cart if now empty)
 router.delete('/cart_items/delete', async (req, res) => {

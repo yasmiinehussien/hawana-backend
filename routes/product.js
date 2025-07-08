@@ -46,14 +46,23 @@ if (req.file?.path) {
 });
 
 // PUT update product
-router.put('/products/:id', async (req, res) => {
-  const { name, category_id, calories, description, image_url, is_best_seller, is_new } = req.body;
+router.put('/products/:id', upload.single('image'), async (req, res) => {
+  const { name, category_id, calories, description, is_best_seller, is_new } = req.body;
   const { id } = req.params;
-  const result = await pool.query(
-    'UPDATE products SET name=$1, category_id=$2, calories=$3, description=$4, image_url=$5, is_best_seller=$6, is_new=$7 WHERE id=$8 RETURNING *',
-    [name, category_id, calories, description, image_url, is_best_seller, is_new, id]
-  );
-  res.json(result.rows[0]);
+
+  // If new image uploaded use Cloudinary path, otherwise fallback to old image_url
+  const image_url = req.file?.path || req.body.image_url;
+
+  try {
+    const result = await pool.query(
+      'UPDATE products SET name=$1, category_id=$2, calories=$3, description=$4, image_url=$5, is_best_seller=$6, is_new=$7 WHERE id=$8 RETURNING *',
+      [name, category_id, calories, description, image_url, is_best_seller || false, is_new || false, id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('❌ Error updating product:', err.message);
+    res.status(500).json({ error: 'Failed to update product' });
+  }
 });
 
 

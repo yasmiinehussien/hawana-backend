@@ -56,9 +56,8 @@ app.use('/api', reviewRoutes);
 const contactRoutes = require('./routes/contact');
 app.use('/api', contactRoutes);
 
-app.use('/promocode', require('./routes/promocode'));
-// ✅ CORRECT:
-app.use('/', require('./routes/promocode'));
+const promoRoutes = require('./routes/promocode');
+app.use('/api', promoRoutes); // ✅ Mount all promo endpoints at /api/*
 
 
 

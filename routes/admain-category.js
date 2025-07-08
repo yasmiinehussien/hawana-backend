@@ -2,59 +2,96 @@ const express = require('express');
 const router = express.Router();
 
 const pool = require('../db_conn'); // adjust path as needed
-PORT = 3000
 
-const upload = require('../utils/cloudinary'); // ✅ Cloudinary uploader
+const upload = require('../utils/cloudinary'); // Cloudinary uploader
 
-
-// ✅ GET all categories
+// GET all categories
 router.get('/categories', async (req, res) => {
   const result = await pool.query('SELECT * FROM categories ORDER BY id');
   res.json(result.rows);
 });
 
-// ✅ POST new category (with image upload)
 // router.post('/categories', upload.single('image'), async (req, res) => {
-//   const { name, description } = req.body;
+//   console.log('req.file:', req.file); // debug log
 
-//   let image_url = req.body.image_url;
-//   if (req.file) {
-//     image_url = `http://localhost:${PORT}/images/${req.file.filename}`;
+//   const { name, description, image_url: imageUrlFromBody } = req.body;
+
+//   // Use secure_url from Cloudinary upload result
+//   let finalImageUrl = imageUrlFromBody;
+//   if (req.file && req.file.secure_url) {
+//     finalImageUrl = req.file.secure_url;
 //   }
 
-//   if (!image_url) {
-//     return res.status(400).json({ error: 'Image is required (upload a file)' });
+//   if (!name || !finalImageUrl) {
+//     return res.status(400).json({ error: 'Name and image are required (file or image_url)' });
 //   }
 
 //   try {
 //     const result = await pool.query(
 //       'INSERT INTO categories (name, description, image_url) VALUES ($1, $2, $3) RETURNING *',
-//       [name, description, image_url]
+//       [name, description, finalImageUrl]
 //     );
-//     res.json(result.rows[0]);
+//     res.status(201).json(result.rows[0]);
 //   } catch (err) {
 //     console.error('❌ Error creating category:', err.message);
-//     res.status(500).json({ error: 'Failed to create category' });
+//     res.status(500).json({ error: 'Server error while creating category' });
 //   }
 // });
 
-// ✅ PUT update category
-// router.put('/categories/:id', async (req, res) => {
-//   const { name, description, image_url } = req.body;
-//   const { id } = req.params;
 
-//   try {
-//     const result = await pool.query(
-//       'UPDATE categories SET name = $1, description = $2, image_url = $3 WHERE id = $4 RETURNING *',
-//       [name, description, image_url, id]
-//     );
-//     res.json(result.rows[0]);
-//   } catch (err) {
-//     res.status(400).json({ error: err.message });
-//   }
-// });
+// PUT update category with optional image upload
+router.put('/categories/:id', upload.single('image'), async (req, res) => {
+  const { id } = req.params;
+  const { name, description, image_url: imageUrlFromBody } = req.body;
 
-// ✅ DELETE category
+  // Prefer uploaded image URL if file uploaded via Cloudinary
+  let finalImageUrl = imageUrlFromBody;
+  if (req.file?.path) {
+    finalImageUrl = req.file.path; // or req.file.secure_url
+  }
+
+  try {
+    // Update query dynamically if you want to only update provided fields
+    const updates = [];
+    const values = [];
+    let idx = 1;
+
+    if (name) {
+      updates.push(`name = $${idx++}`);
+      values.push(name);
+    }
+    if (description) {
+      updates.push(`description = $${idx++}`);
+      values.push(description);
+    }
+    if (finalImageUrl) {
+      updates.push(`image_url = $${idx++}`);
+      values.push(finalImageUrl);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No data to update' });
+    }
+
+    values.push(id);
+
+    const result = await pool.query(
+      `UPDATE categories SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('❌ Error updating category:', err.message);
+    res.status(500).json({ error: 'Failed to update category' });
+  }
+});
+
+// DELETE category
 router.delete('/categories/:id', async (req, res) => {
   const { id } = req.params;
   await pool.query('DELETE FROM categories WHERE id=$1', [id]);

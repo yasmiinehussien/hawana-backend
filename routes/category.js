@@ -1,15 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db_conn'); // or '../db'
-const multer = require('multer');
-const { storage } = require('../utils/cloudinary'); // ✅ You will create this file next
-const upload = multer({ storage });
+const pool = require('../db_conn');
+const upload = require('../utils/cloudinary'); // multer + Cloudinary uploader
 
-
-// ✅ Define backend server port (used in image URL)
-const BASE_URL = process.env.BASE_URL || `http://localhost:3000`;
-
-// ✅ GET all categories
+// GET all categories
 router.get('/categories', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM categories ORDER BY id');
@@ -20,106 +14,61 @@ router.get('/categories', async (req, res) => {
   }
 });
 
-
+// POST create new category with image upload (Cloudinary)
 router.post('/categories', upload.single('image'), async (req, res) => {
-  const { name, description } = req.body;
+  const { name, description, image_url } = req.body;
 
-  if (!req.file || !req.file.path) {
-    return res.status(400).json({ error: 'Image is required (upload a file)' });
+  // Cloudinary multer puts uploaded file info in req.file
+  // It has .path, .secure_url, or .url for the uploaded file URL
+  let finalImageUrl = image_url || '';
+  if (req.file) {
+    finalImageUrl = req.file.secure_url || req.file.path || finalImageUrl;
   }
 
-  const image_url = req.file.path; // ✅ Cloudinary auto returns full URL
+  if (!name || !finalImageUrl) {
+    return res.status(400).json({ error: 'Name and image are required (file or image_url)' });
+  }
 
   try {
     const result = await pool.query(
       'INSERT INTO categories (name, description, image_url) VALUES ($1, $2, $3) RETURNING *',
-      [name, description, image_url]
+      [name, description, finalImageUrl]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('❌ Error creating category:', err.message);
-    res.status(500).json({ error: 'Failed to create category' });
+    res.status(500).json({ error: 'Server error while creating category' });
   }
 });
 
-
-// // ✅ POST new category (with image upload)
-// router.post('/categories', categoryUpload.single('image'), async (req, res) => {
-//   const { name, description } = req.body;
-
-//   let image_url = req.body.image_url;
-
-//   // ✅ Correct deployment-safe URL
-//   if (req.file) {
-//     image_url = `${req.protocol}://${req.get('host')}/images/${req.file.filename}`;
-//   }
-
-//   if (!image_url) {
-//     return res.status(400).json({ error: 'Image is required (upload a file)' });
-//   }
-
-//   try {
-//     const result = await pool.query(
-//       'INSERT INTO categories (name, description, image_url) VALUES ($1, $2, $3) RETURNING *',
-//       [name, description, image_url]
-//     );
-//     res.status(201).json(result.rows[0]);
-//   } catch (err) {
-//     console.error('❌ Error creating category:', err.message);
-//     res.status(500).json({ error: 'Failed to create category' });
-//   }
-// });
-
-
-
+// PUT update category with optional image upload
 router.put('/categories/:id', upload.single('image'), async (req, res) => {
-  const { name, description } = req.body;
   const { id } = req.params;
+  const { name, description, image_url } = req.body;
 
-  const image_url = req.file?.path || req.body.image_url; // ✅ Use new Cloudinary path
+  let finalImageUrl = image_url || '';
+  if (req.file) {
+    finalImageUrl = req.file.secure_url || req.file.path || finalImageUrl;
+  }
 
   try {
     const result = await pool.query(
-      `UPDATE categories
-       SET name = $1, description = $2, image_url = $3
-       WHERE id = $4
-       RETURNING *`,
-      [name, description, image_url, id]
+      `UPDATE categories SET name = $1, description = $2, image_url = $3 WHERE id = $4 RETURNING *`,
+      [name, description, finalImageUrl, id]
     );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('❌ Category update failed:', err.message);
+    console.error('❌ Error updating category:', err.message);
     res.status(500).json({ error: 'Failed to update category' });
   }
 });
 
-// // ✅ PUT update category with optional image
-// router.put('/categories/:id', categoryUpload.single('image'), async (req, res) => {
-//   const { name, description } = req.body;
-//   const { id } = req.params;
-
-//   try {
-//    const image_url = req.file
-//   ? `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-//   : req.body.image_url;
-
-//     const result = await pool.query(
-//       `UPDATE categories
-//        SET name = $1, description = $2, image_url = $3
-//        WHERE id = $4
-//        RETURNING *`,
-//       [name, description, image_url, id]
-//     );
-
-//     res.json(result.rows[0]);
-//   } catch (err) {
-//     console.error('❌ Category update failed:', err.message);
-//     res.status(500).json({ error: 'Failed to update category' });
-//   }
-// });
-
-
-// ✅ DELETE category
+// DELETE category
 router.delete('/categories/:id', async (req, res) => {
   const { id } = req.params;
   try {
