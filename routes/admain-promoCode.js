@@ -164,12 +164,33 @@ router.put('/promocode/:id/status', async (req, res) => {
 router.get('/promocodes', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM promocode ORDER BY id DESC');
-    res.json(result.rows);
+    const promos = result.rows;
+
+    const now = new Date();
+
+    for (const promo of promos) {
+      const endDate = promo.end_date ? new Date(promo.end_date) : null;
+
+      if (
+        endDate &&
+        now > endDate &&
+        promo.status === 'active' // ✅ only auto-expire if still active
+      ) {
+        await pool.query(
+          `UPDATE promocode SET status = 'expired' WHERE id = $1`,
+          [promo.id]
+        );
+        promo.status = 'expired';
+      }
+    }
+
+    res.json(promos);
   } catch (err) {
     console.error('❌ Error fetching promo codes:', err.message);
     res.status(500).json({ error: 'Failed to fetch promo codes' });
   }
 });
+
 
 
 // ✅ Update promo code by ID
@@ -178,6 +199,21 @@ router.put('/promocode/:id', async (req, res) => {
   const { end_date, status, discount_amount } = req.body;
 
   try {
+    // Get current promo status
+    const current = await pool.query('SELECT * FROM promocode WHERE id = $1', [id]);
+    if (current.rows.length === 0) {
+      return res.status(404).json({ error: 'Promo code not found' });
+    }
+
+    const now = new Date();
+    const endDateObj = end_date ? new Date(end_date) : null;
+    let newStatus = status;
+
+    // ✅ If end_date is in future and current is 'expired', make it active
+    if (endDateObj && endDateObj > now && current.rows[0].status === 'expired') {
+      newStatus = 'active';
+    }
+
     const result = await pool.query(
       `UPDATE promocode
        SET end_date = $1,
@@ -185,12 +221,8 @@ router.put('/promocode/:id', async (req, res) => {
            discount_amount = $3
        WHERE id = $4
        RETURNING *`,
-      [end_date || null, status, discount_amount, id]
+      [end_date || null, newStatus, discount_amount, id]
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Promo code not found' });
-    }
 
     res.json({ message: 'Promo updated successfully', promo: result.rows[0] });
   } catch (err) {
@@ -198,6 +230,7 @@ router.put('/promocode/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to update promo code' });
   }
 });
+
 
 // ✅ DELETE promo code by ID
 router.delete('/promocode/:id', async (req, res) => {
