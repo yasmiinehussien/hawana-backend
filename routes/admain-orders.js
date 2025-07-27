@@ -117,7 +117,7 @@ router.get('/orders-admain/:id/details', async (req, res) => {
 
     const order = orderResult.rows[0];
 
-    // ✅ No join — just get snapshot product name
+    // ✅ Include `notes` in order_items
     const itemsResult = await pool.query(`
       SELECT 
         id,
@@ -125,7 +125,8 @@ router.get('/orders-admain/:id/details', async (req, res) => {
         size_label,
         price_per_unit,
         total_price,
-        product_name
+        product_name,
+        notes
       FROM order_items
       WHERE order_id = $1
     `, [id]);
@@ -141,6 +142,7 @@ router.get('/orders-admain/:id/details', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch order details' });
   }
 });
+
 
 // ✅ Update order status
 router.put('/orders-admain/:id/status', async (req, res) => {

@@ -75,7 +75,7 @@ router.post('/orders', async (req, res) => {
     const result = await pool.query(
       `INSERT INTO orders (
         user_id, total_price, status, payment_method,
-        delivery_method, shipping_amount, tax_amount, notes, customer_name, customer_mobile
+        delivery_method, shipping_amount, tax_amount, customer_name, customer_mobile
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *`,
       [
@@ -86,7 +86,6 @@ router.post('/orders', async (req, res) => {
         delivery_method,
         shipping_amount,
         tax_amount,
-        notes,
         customer_name,
         customer_mobile
       ]
@@ -109,7 +108,6 @@ router.put('/orders/:id', async (req, res) => {
     delivery_method,
     shipping_amount,
     tax_amount,
-    notes,
     customer_name,
     customer_mobile
   } = req.body;
@@ -123,10 +121,9 @@ router.put('/orders/:id', async (req, res) => {
         delivery_method = $4,
         shipping_amount = $5,
         tax_amount = $6,
-        notes = $7,
-        customer_name = $8,
-        customer_mobile = $9
-      WHERE id = $10
+        customer_name = $7,
+        customer_mobile = $8
+      WHERE id = $9
       RETURNING *`,
       [
         total_price,
@@ -135,7 +132,6 @@ router.put('/orders/:id', async (req, res) => {
         delivery_method,
         shipping_amount,
         tax_amount,
-        notes,
         customer_name,
         customer_mobile,
         id
@@ -150,19 +146,25 @@ router.put('/orders/:id', async (req, res) => {
 
 // ---------------------------
 // Order Items
-// ---------------------------
-
-// Add item to an order
 router.post('/order_items', async (req, res) => {
- const { order_id, product_id, size_label, quantity, price_per_unit, product_name } = req.body;
-const total_price = price_per_unit * quantity;
+  const {
+    order_id,
+    product_id,
+    size_label,
+    quantity,
+    price_per_unit,
+    product_name,
+    notes // ✅ Add this line
+  } = req.body;
+
+  const total_price = price_per_unit * quantity;
 
   try {
     const result = await pool.query(
       `INSERT INTO order_items 
-   (order_id, product_id, size_label, quantity, price_per_unit, total_price, product_name) 
-   VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-  [order_id, product_id, size_label, quantity, price_per_unit, total_price, product_name]
+        (order_id, product_id, size_label, quantity, price_per_unit, total_price, product_name, notes) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [order_id, product_id, size_label, quantity, price_per_unit, total_price, product_name, notes] // ✅ Add notes param
     );
 
     await pool.query(

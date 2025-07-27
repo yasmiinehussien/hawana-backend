@@ -71,7 +71,6 @@ CREATE TABLE orders (
   delivery_method VARCHAR(50),
   shipping_amount DECIMAL(10, 2) DEFAULT 0.00,
   tax_amount DECIMAL(10, 2) DEFAULT 0.00,
-  notes TEXT,
   address TEXT,
   customer_name VARCHAR(100),
   customer_mobile VARCHAR(20),
@@ -88,10 +87,11 @@ CREATE TABLE order_items (
   size_label VARCHAR(50),
   quantity INT DEFAULT 1,
   price_per_unit DECIMAL(10, 2),
-  total_price DECIMAL(10, 2)
-  product_name VARCHAR(255),  -- new column here
-
+  total_price DECIMAL(10, 2),
+  product_name VARCHAR(255),  -- new column
+  notes TEXT                  -- new column for per-item notes
 );
+
 
 
 -- 9. Reviews (guest only)
